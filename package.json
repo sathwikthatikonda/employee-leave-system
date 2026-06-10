@@ -1,0 +1,16 @@
+{
+  "name": "employee-leave-management-system",
+  "version": "1.0.0",
+  "description": "Employee Leave Management System with HR, Manager, and Employee portals, serverless backend, AWS CDK infrastructure, and CI/CD pipelines.",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "infrastructure"
+  ],
+  "scripts": {
+    "frontend:dev": "npm run dev -w frontend",
+    "frontend:build": "npm run build -w frontend",
+    "infra:build": "npm run build -w infrastructure",
+    "infra:cdk": "npm run cdk -w infrastructure"
+  }
+}

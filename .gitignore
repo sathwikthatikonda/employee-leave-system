@@ -1,0 +1,14 @@
+# Ignore Terraform binaries and state files
+.terraform/
+*.terraform*
+*.tfstate
+*.tfstate.backup
+.terraform.tfstate.lock.info
+*.tfvars
+*.tfvars.json
+
+# Ignore Node.js dependencies (Crucial!)
+node_modules/
+**/node_modules/
+dist/
+.env
