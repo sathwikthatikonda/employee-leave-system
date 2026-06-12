@@ -1,10 +1,28 @@
 version: 0.2
 
 phases:
+  install:
+    commands:
+      # 1. Install Terraform
+      - echo "Installing Terraform..."
+      - sudo yum install -y yum-utils
+      - sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+      - sudo yum install -y terraform
+      
+      # 2. Install Node.js dependencies for your backend code
+      - echo "Installing Node.js packages..."
+      - npm ci
+
+  pre_build:
+    commands:
+      # 3. Compile/Build your Node backend (if using TypeScript or bundlers)
+      - echo "Building backend application..."
+      - npm run build --if-present
+
   build:
     commands:
-      - zip function.zip lambda_function.py
-
-artifacts:
-  files:
-    - function.zip
+      # 4. Initialize and apply Terraform
+      - echo "Initializing Terraform..."
+      - terraform init -input=false
+      - echo "Applying Infrastructure changes..."
+      - terraform apply -auto-approve -input=false
