@@ -2,27 +2,45 @@ version: 0.2
 
 phases:
   install:
+    runtime-versions:
+      nodejs: 20
+
     commands:
-      # 1. Install Terraform
       - echo "Installing Terraform..."
-      - sudo yum install -y yum-utils
-      - sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-      - sudo yum install -y terraform
-      
-      # 2. Install Node.js dependencies for your backend code
-      - echo "Installing Node.js packages..."
+
+      - curl -O https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip
+      - unzip terraform_1.8.5_linux_amd64.zip
+      - mv terraform /usr/local/bin/
+      - terraform version
+
+      - echo "Installing Node.js dependencies..."
+      - cd backend
       - npm ci
 
   pre_build:
     commands:
-      # 3. Compile/Build your Node backend (if using TypeScript or bundlers)
-      - echo "Building backend application..."
+      - echo "Building backend..."
       - npm run build --if-present
 
-  build:
-    commands:
-      # 4. Initialize and apply Terraform
+      - echo "Running Terraform format check..."
+      - cd ../terraform
+      - terraform fmt -check
+
       - echo "Initializing Terraform..."
-      - terraform -chdir=terraform init -input=false
-      - echo "Applying Infrastructure changes..."
-      - terraform -chdir=terraform apply -auto-approve -input=false
+      - terraform init
+
+      - echo "Validating Terraform..."
+      - terraform validate
+
+build:
+  commands:
+    - echo "Applying Terraform..."
+    - terraform apply -auto-approve
+
+  post_build:
+    commands:
+      - echo "Build completed successfully"
+
+artifacts:
+  files:
+    - '**/*'
