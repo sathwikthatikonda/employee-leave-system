@@ -2,112 +2,44 @@ version: 0.2
 
 env:
   variables:
-    TF_VERSION: "1.15.6"
     TF_DIR: "terraform"
-    TF_STATE_BUCKET: "elms-terraform-state-sathwik-12345"
-    TF_STATE_REGION: "us-east-1"
+    TF_VERSION: "1.5.7"
 
 phases:
-
-  # ──────────────────────────────────────────────
-  # INSTALL — install Terraform
-  # ──────────────────────────────────────────────
   install:
-    runtime-versions:
-      python: 3.11        # useful if you have any Python Lambda functions
     commands:
-      - echo "=== Installing Terraform $TF_VERSION ==="
-      - yum install -y unzip curl
+      - echo "Installing Terraform..."
+      - yum update -y
+      - yum install -y unzip curl jq
       - curl -sSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" -o terraform.zip
       - unzip -o terraform.zip -d /usr/local/bin/
       - chmod +x /usr/local/bin/terraform
       - terraform version
 
-  # ──────────────────────────────────────────────
-  # PRE_BUILD — validate & format check
-  # ──────────────────────────────────────────────
   pre_build:
     commands:
-      - echo "=== Pre-build started on $(date) ==="
-      - echo "=== Repo structure ==="
-      - ls -la
-      - echo "=== Terraform directory contents ==="
-      - ls -la $TF_DIR/
+      - echo "=== Pre-build Validation ==="
+      - cd $TF_DIR
+      - terraform init -input=false
+      - terraform validate
+      - cd ..
 
-      # Format check (fails if any .tf file is not properly formatted)
-      - echo "=== Running terraform fmt check ==="
-      - cd $TF_DIR && terraform fmt -check -recursive
-      - cd $CODEBUILD_SRC_DIR
-
-      # Init with S3 remote backend
-      - echo "=== Running terraform init ==="
-      - |
-        cd $TF_DIR && terraform init \
-          -backend-config="bucket=${TF_STATE_BUCKET}" \
-          -backend-config="key=employee-leave-system/terraform.tfstate" \
-          -backend-config="region=${TF_STATE_REGION}" \
-          -input=false
-      - cd $CODEBUILD_SRC_DIR
-
-      # Validate configuration
-      - echo "=== Running terraform validate ==="
-      - cd $TF_DIR && terraform validate
-      - cd $CODEBUILD_SRC_DIR
-
-  # ──────────────────────────────────────────────
-  # BUILD — plan and apply
-  # ──────────────────────────────────────────────
   build:
     commands:
-      - echo "=== Build started on $(date) ==="
+      - echo "=== Running Terraform Plan ==="
       - cd $TF_DIR
-
-      # Generate execution plan
-      - echo "=== Running terraform plan ==="
-      - |
-        terraform plan \
-          -input=false \
-          -out=tfplan
-
-      # Apply the plan (auto-approve for CD pipeline)
-      - echo "=== Running terraform apply ==="
-      - terraform apply -input=false -auto-approve tfplan
-
-      # Capture outputs (e.g. API Gateway URL, CloudFront domain)
-      - echo "=== Terraform outputs ==="
+      - export TF_VAR_environment=$ENVIRONMENT
+      - terraform plan -input=false -out=tfplan
+      
+      - echo "=== Applying Infrastructure changes ==="
+      - terraform apply -auto-approve -input=false tfplan
+      
+      - echo "=== Capturing Terraform Outputs ==="
       - terraform output -json > ../tf_outputs.json
-      - cat ../tf_outputs.json
+      - cd ..
+      - cat tf_outputs.json
 
-      - cd $CODEBUILD_SRC_DIR
-
-  # ──────────────────────────────────────────────
-  # POST_BUILD — report status
-  # ──────────────────────────────────────────────
-  post_build:
-    commands:
-      - echo "=== Post-build started on $(date) ==="
-      - |
-        if [ $CODEBUILD_BUILD_SUCCEEDING -eq 1 ]; then
-          echo "✅ Terraform apply SUCCEEDED"
-          echo "=== Deployed infrastructure outputs ==="
-          cat tf_outputs.json
-        else
-          echo "❌ Terraform apply FAILED — check logs above"
-        fi
-
-# ──────────────────────────────────────────────
-# ARTIFACTS — pass tf outputs to next pipeline stage
-# (e.g. a frontend deploy stage that needs the API URL)
-# ──────────────────────────────────────────────
 artifacts:
   files:
-    - tf_outputs.json       # API Gateway URL, Cognito pool IDs, etc.
-    - terraform/tfplan      # optional: store the plan for auditing
-  discard-paths: no
-
-# ──────────────────────────────────────────────
-# CACHE — speed up future builds
-# ──────────────────────────────────────────────
-cache:
-  paths:
-    - /usr/local/bin/terraform   # cache the terraform binary
+    - tf_outputs.json
+  discard-paths: yes

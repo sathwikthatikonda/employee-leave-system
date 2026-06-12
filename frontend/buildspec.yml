@@ -7,13 +7,15 @@ phases:
 
   pre_build:
     commands:
-      - npm install
+      - echo "Installing frontend dependencies..."
+      - cd frontend && npm install
 
   build:
     commands:
-      - npm run build
+      - echo "Building frontend application..."
+      - cd frontend && npm run build
 
 artifacts:
-  base-directory: dist
+  base-directory: frontend/dist
   files:
     - '**/*'
