@@ -23,6 +23,6 @@ phases:
     commands:
       # 4. Initialize and apply Terraform
       - echo "Initializing Terraform..."
-      - terraform init -input=false
+      - terraform -chdir=terraform init -input=false
       - echo "Applying Infrastructure changes..."
-      - terraform apply -auto-approve -input=false
+      - terraform -chdir=terraform apply -auto-approve -input=false

@@ -22,3 +22,16 @@ variable "ses_sender" {
   description = "SES verified email address to send OTPs from"
   default     = "noreply@yourdomain.com"
 }
+
+variable "github_repo" {
+  type        = string
+  description = "The GitHub repository in the format owner/repo"
+  default     = "sathwikthatikonda/employee-leave-system"
+}
+
+variable "github_branch" {
+  type        = string
+  description = "The branch to trigger the pipeline"
+  default     = "main"
+}
+
