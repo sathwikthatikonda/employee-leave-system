@@ -145,6 +145,16 @@ resource "aws_codebuild_project" "backend_deploy" {
       name  = "ENVIRONMENT"
       value = var.environment
     }
+
+    environment_variable {
+      name  = "TF_STATE_BUCKET"
+      value = "elms-terraform-state-sathwik-12345"
+    }
+
+    environment_variable {
+      name  = "TF_STATE_REGION"
+      value = var.aws_region
+    }
   }
 
   source {
