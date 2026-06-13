@@ -4,11 +4,7 @@
 
 The Employee Leave Management System is a serverless web application built on AWS that allows employees to submit leave requests through a React-based frontend. Leave requests are processed by AWS Lambda functions, stored in DynamoDB, and integrated with SNS notifications.
 
-The project demonstrates modern cloud-native application development using Infrastructure as Code (Terraform), serverless architecture, and CI/CD automation using AWS DevOps services.
-
-**Live Application:** [https://dnf1xg9sdrnw4.cloudfront.net](https://dnf1xg9sdrnw4.cloudfront.net)
-
----
+The project is structured for serverless AWS hosting and is prepared for CI/CD.
 
 ## Architecture
 
@@ -189,125 +185,8 @@ Example Request:
 
 ## CI/CD Pipeline
 
-This project implements Continuous Integration and Continuous Deployment using AWS CodePipeline and AWS CodeBuild.
-
-![AWS CodePipeline CI/CD](ci-cd-screenshot.png)
-
-### CI Workflow
-
-```text
-Developer
-    │
-    ▼
-GitHub Repository
-    │
-    ▼
-CodeBuild
-    │
-    ▼
-npm install
-    │
-    ▼
-npm run build
-    │
-    ▼
-Build Artifact
-```
-
-### CD Workflow
-
-```text
-GitHub
-    │
-    ▼
-CodePipeline
-    │
-    ▼
-CodeBuild
-    │
-    ▼
-S3 Deployment
-    │
-    ▼
-CloudFront
-```
-
-### Deployment Process
-
-1. Developer pushes code to GitHub.
-2. GitHub webhook triggers CodePipeline.
-3. CodePipeline retrieves the latest source code.
-4. CodeBuild executes the build process.
-5. React production build artifacts are generated.
-6. Artifacts are deployed to Amazon S3.
-7. CloudFront serves the latest application version.
-8. Users access the updated application.
-
----
-
-## Continuous Integration
-
-The CI process automatically:
-
-* Pulls source code from GitHub
-* Installs dependencies
-* Executes React build process
-* Validates application build
-* Generates deployment artifacts
-
----
-
-## Continuous Deployment
-
-The CD process automatically:
-
-* Deploys build artifacts to S3
-* Updates the hosted application
-* Delivers content globally through CloudFront
-
----
-
-## Security Considerations
-
-* IAM roles follow least-privilege principles
-* Infrastructure managed through Terraform
-* Static content delivered through CloudFront
-* Backend services isolated within AWS managed services
-* No hardcoded credentials stored in source code
-
----
-
-## Learning Objectives
-
-This project demonstrates practical experience with:
-
-* Cloud Architecture Design
-* Serverless Computing
-* Infrastructure as Code (IaC)
-* AWS Core Services
-* REST API Development
-* Continuous Integration
-* Continuous Deployment
-* DevOps Practices
-* Git Version Control
-* Terraform Automation
-
----
-
-## Future Enhancements
-
-* User authentication using Amazon Cognito
-* Leave approval workflow
-* Email notifications
-* Manager dashboard
-* Leave balance tracking
-* Audit logging
-* Monitoring with CloudWatch
-* Automated CloudFront cache invalidation
-* Backend CI/CD automation for Lambda deployments
-
----
-
-## Author
-
-Built as a cloud-native portfolio project to demonstrate AWS, Terraform, Serverless Architecture, and DevOps CI/CD practices.
+The `.github/workflows/deploy.yml` pipeline runs on every push to the `main` branch:
+1. Installs dependencies and runs linter checks.
+2. Compiles the TypeScript code for the backend Lambdas and infrastructure.
+3. Deploys updated AWS resources via `cdk deploy`.
+4. Builds the frontend React app and uploads static files to S3, followed by a CloudFront invalidation for instant updates.
