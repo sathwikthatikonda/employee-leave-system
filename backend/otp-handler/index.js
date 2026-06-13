@@ -94,19 +94,19 @@ exports.handler = async (event) => {
           },
           Message: {
             Subject: {
-              Data: 'Chronos Portal - Your Secure OTP Verification Code'
+              Data: 'Employee Leave Management Portal - Your Secure OTP Verification Code'
             },
             Body: {
               Html: {
                 Data: `
                   <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 30px; background-color: #0A0A0C; border: 1.5px solid #00F0FF; border-radius: 12px; color: #E4E4E7; box-shadow: 0 10px 30px rgba(0, 240, 255, 0.1);">
                     <div style="text-align: center; margin-bottom: 20px;">
-                      <h1 style="color: #00F0FF; margin: 0; font-size: 1.6rem; letter-spacing: 2px;">CHRONOS SECURITY</h1>
+                      <h1 style="color: #00F0FF; margin: 0; font-size: 1.6rem; letter-spacing: 2px;">EMPLOYEE LEAVE MANAGEMENT SECURITY</h1>
                       <p style="color: #71717A; margin: 5px 0 0 0; font-size: 0.85rem;">Employee Leave Management System</p>
                     </div>
                     <hr style="border: 0; border-top: 1px solid #27272A; margin: 20px 0;" />
                     <p style="font-size: 0.95rem; line-height: 1.5;">Hello <strong>${name || email.split('@')[0]}</strong>,</p>
-                    <p style="font-size: 0.95rem; line-height: 1.5;">You requested a secure login code to access the Chronos Portal as an <strong>${role || 'Employee'}</strong>.</p>
+                    <p style="font-size: 0.95rem; line-height: 1.5;">You requested a secure login code to access the Employee Leave Management Portal as an <strong>${role || 'Employee'}</strong>.</p>
                     <div style="font-size: 2.2rem; font-weight: bold; text-align: center; letter-spacing: 6px; margin: 30px 0; padding: 20px; background-color: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1.5px dashed #00F0FF; color: #00F0FF;">
                       ${otp}
                     </div>
@@ -117,7 +117,7 @@ exports.handler = async (event) => {
                 `
               },
               Text: {
-                Data: `Hello ${name || email.split('@')[0]},\n\nYour secure Chronos Portal OTP verification code is: ${otp}\n\nThis code will expire in 5 minutes.`
+                Data: `Hello ${name || email.split('@')[0]},\n\nYour secure Employee Leave Management Portal OTP verification code is: ${otp}\n\nThis code will expire in 5 minutes.`
               }
             }
           }

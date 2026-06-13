@@ -234,7 +234,7 @@ export const Login: React.FC = () => {
           <div style={styles.logoIcon}>
             <Calendar size={28} color="#FFFFFF" />
           </div>
-          <h1 style={styles.title}>Chronos</h1>
+          <h1 style={styles.title}>Employee Leave Management</h1>
           <p style={styles.subtitle}>Workspace Portal Access</p>
         </header>
 

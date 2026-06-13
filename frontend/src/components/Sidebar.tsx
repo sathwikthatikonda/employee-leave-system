@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           <div style={{width: 14, height: 14, background: 'var(--text-primary)', borderRadius: 3}} />
         </div>
         <div>
-          <h2 style={styles.brandTitle}>Chronos</h2>
+          <h2 style={styles.brandTitle}>Employee Leave Management</h2>
           <span style={styles.brandSub}>Workspace Portal</span>
         </div>
       </div>
