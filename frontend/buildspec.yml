@@ -7,11 +7,8 @@ phases:
   pre_build:
     commands:
       - echo Installing dependencies...
-      - cd frontend && npm install       # <--- Crucial: Navigate into frontend first
+      - npm install
   build:
     commands:
       - echo Build started on `date`
-      - cd frontend && npm run build     # <--- Crucial: Navigate into frontend first
-artifacts:
-  files:
-    - 'frontend/dist/**/*'              # Adjust this path based on where your build output goes
+      - npm run build
