@@ -191,7 +191,7 @@ Example Request:
 
 This project implements Continuous Integration and Continuous Deployment using AWS CodePipeline and AWS CodeBuild.
 
-![AWS CodePipeline CI/CD](ci-cd-screenshot.png)
+![AWS CodePipeline CI/CD](images/cicd_pipeline.png)
 
 ### CI Workflow
 
