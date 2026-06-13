@@ -3,18 +3,19 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 18
+      # Upgrade Node.js from 18 to 20 to support Vite 6 and React 19
+      nodejs: 20
   pre_build:
     commands:
-      - echo Installing dependencies...
-      # Use --prefix to force npm to run inside the frontend folder
+      - echo "Installing dependencies..."
       - npm install --prefix frontend
   build:
     commands:
-      - echo Build started on `date`
-      # Use --prefix to force npm to run the build script inside the frontend folder
+      - echo "Build started..."
       - npm run build --prefix frontend
 
 artifacts:
+  # This makes sure AWS grabs the compiled React files after a successful build
+  base-directory: frontend/dist
   files:
-    - 'frontend/dist/**/*'
+    - '**/*'
