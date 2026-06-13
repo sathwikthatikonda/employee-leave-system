@@ -125,10 +125,9 @@ resource "aws_iam_role_policy_attachment" "codepipeline_attach" {
 }
 
 # CodeBuild Project: Backend Deploy (Terraform Apply)
-resource "aws_codebuild_project" "backend_deploy" {
-  name          = "elms-backend-deploy"
-  description   = "Builds backend and deploys AWS infrastructure via Terraform"
-  build_timeout = "20"
+resource "aws_codebuild_project" "backend_build" {
+  name          = "elms-backend-build"
+  build_timeout = "5"
   service_role  = aws_iam_role.codebuild_role.arn
 
   artifacts {
@@ -139,46 +138,34 @@ resource "aws_codebuild_project" "backend_deploy" {
     compute_type                = "BUILD_GENERAL1_SMALL"
     image                       = "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
     type                        = "LINUX_CONTAINER"
-    image_pull_credentials_type = "CODEBUILD"
-
-    environment_variable {
-      name  = "ENVIRONMENT"
-      value = var.environment
-    }
-
-    environment_variable {
-      name  = "TF_STATE_BUCKET"
-      value = "elms-terraform-state-sathwik-12345"
-    }
-
-    environment_variable {
-      name  = "TF_STATE_REGION"
-      value = var.aws_region
-    }
+    privileged_mode             = true
   }
 
   source {
     type      = "CODEPIPELINE"
-    buildspec = "backend/buildspec.yml"
-  }
-
-  logs_config {
-    cloudwatch_logs {
-      group_name  = "/aws/codebuild/elms-backend-deploy"
-      stream_name = "build-log"
-    }
-  }
-
-  tags = {
-    Environment = var.environment
+    # Write your buildspec directly here! No file needed.
+    buildspec = <<EOF
+version: 0.2
+phases:
+  install:
+    commands:
+      - echo Installing Terraform...
+      - sudo yum install -y yum-utils
+      - sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+      - sudo yum -y install terraform
+  build:
+    commands:
+      - echo Running backend infrastructure deployment...
+      - terraform init
+      - terraform apply -auto-approve
+EOF
   }
 }
 
 # CodeBuild Project: Frontend Build (React compilation)
 resource "aws_codebuild_project" "frontend_build" {
   name          = "elms-frontend-build"
-  description   = "Compiles React frontend application"
-  build_timeout = "20"
+  build_timeout = "5"
   service_role  = aws_iam_role.codebuild_role.arn
 
   artifacts {
@@ -189,13 +176,7 @@ resource "aws_codebuild_project" "frontend_build" {
     compute_type                = "BUILD_GENERAL1_SMALL"
     image                       = "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
     type                        = "LINUX_CONTAINER"
-    image_pull_credentials_type = "CODEBUILD"
-
-    environment_variable {
-      name  = "ENVIRONMENT"
-      value = var.environment
-    }
-
+    
     environment_variable {
       name  = "VITE_API_BASE_URL"
       value = aws_api_gateway_stage.stage.invoke_url
@@ -204,18 +185,23 @@ resource "aws_codebuild_project" "frontend_build" {
 
   source {
     type      = "CODEPIPELINE"
-    buildspec = "frontend/buildspec.yml"
-  }
-
-  logs_config {
-    cloudwatch_logs {
-      group_name  = "/aws/codebuild/elms-frontend-build"
-      stream_name = "build-log"
-    }
-  }
-
-  tags = {
-    Environment = var.environment
+    # Inline buildspec for frontend
+    buildspec = <<EOF
+version: 0.2
+phases:
+  install:
+    commands:
+      - echo Installing dependencies...
+      - npm install
+  build:
+    commands:
+      - echo Building frontend application...
+      - npm run build
+artifacts:
+  files:
+    - '**/*'
+  base-directory: dist
+EOF
   }
 }
 
@@ -308,7 +294,7 @@ resource "aws_codepipeline" "pipeline" {
       version          = "1"
 
       configuration = {
-        ProjectName = aws_codebuild_project.backend_deploy.name
+        ProjectName = aws_codebuild_project.backend_build.name
       }
     }
   }
