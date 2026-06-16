@@ -130,12 +130,11 @@ exports.handler = async (event) => {
         emailError = err.message;
       }
 
-      // Return response with devModeOtp for testing convenience
+      // Return response
       response.statusCode = 200;
       response.body = JSON.stringify({
         message: emailSent ? 'OTP sent successfully! Please check your inbox.' : `Failed to send email: ${emailError}`,
-        emailSent,
-        devModeOtp: otp
+        emailSent
       });
       return response;
     }

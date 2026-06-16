@@ -20,7 +20,7 @@ variable "jwt_secret" {
 variable "ses_sender" {
   type        = string
   description = "SES verified email address to send OTPs from"
-  default     = "noreply@yourdomain.com"
+  default     = "sathwikthatikonda5@gmail.com"
 }
 
 variable "github_repo" {

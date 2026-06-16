@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../context/AuthContext';
-import { Calendar, User, ShieldAlert, Award, Lock, Mail, Key, ArrowLeft, CheckCircle } from 'lucide-react';
-import { API_BASE_URL } from '../config';
+import { Calendar, User, ShieldAlert, Award, Lock, Mail, Key, ArrowLeft } from 'lucide-react';
+
+const SEND_OTP_URL = '/api/send-otp';
+
 
 export const Login: React.FC = () => {
   const { login, isLoading } = useAuth();
@@ -13,11 +15,8 @@ export const Login: React.FC = () => {
   
   // OTP Flow States
   const [isOtpSent, setIsOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
   const [enteredOtp, setEnteredOtp] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
-  const [showToast, setShowToast] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
   // Resend countdown timer logic
@@ -63,11 +62,7 @@ export const Login: React.FC = () => {
 
     setIsVerifying(true);
     try {
-      if (API_BASE_URL.includes('your-api-id')) {
-        throw new Error('PLACEHOLDER_URL');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/send-otp`, {
+      const response = await fetch(SEND_OTP_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,32 +80,13 @@ export const Login: React.FC = () => {
       if (response.ok) {
         setIsOtpSent(true);
         setResendTimer(60);
-        setCopied(false);
-        if (data.devModeOtp) {
-          setOtpCode(data.devModeOtp);
-          setShowToast(true);
-        } else {
-          setShowToast(false);
-        }
       } else {
         setErrorMsg(data.message || 'Could not send verification code.');
       }
     } catch (error: unknown) {
       setIsVerifying(false);
-      const isPlaceholder = error instanceof Error && error.message === 'PLACEHOLDER_URL';
-      if (isPlaceholder || error instanceof TypeError) {
-        console.warn('AWS API Gateway not configured or unreachable. Falling back to local sandbox auth.');
-        // Local sandbox fallback
-        const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-        setOtpCode(generatedCode);
-        setIsOtpSent(true);
-        setResendTimer(60);
-        setCopied(false);
-        setShowToast(true);
-      } else {
-        console.error('Connection failed:', error);
-        setErrorMsg('Failed to connect to the authentication server.');
-      }
+      console.error('Connection failed:', error);
+      setErrorMsg('Failed to connect to the authentication server.');
     }
   };
 
@@ -120,11 +96,7 @@ export const Login: React.FC = () => {
     setEnteredOtp('');
     
     try {
-      if (API_BASE_URL.includes('your-api-id')) {
-        throw new Error('PLACEHOLDER_URL');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/send-otp`, {
+      const response = await fetch(SEND_OTP_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -140,29 +112,12 @@ export const Login: React.FC = () => {
 
       if (response.ok) {
         setResendTimer(60);
-        setCopied(false);
-        if (data.devModeOtp) {
-          setOtpCode(data.devModeOtp);
-          setShowToast(true);
-        } else {
-          setShowToast(false);
-        }
       } else {
         setErrorMsg(data.message || 'Could not resend verification code.');
       }
     } catch (error: unknown) {
-      const isPlaceholder = error instanceof Error && error.message === 'PLACEHOLDER_URL';
-      if (isPlaceholder || error instanceof TypeError) {
-        console.warn('Falling back to local sandbox resend.');
-        const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-        setOtpCode(generatedCode);
-        setResendTimer(60);
-        setCopied(false);
-        setShowToast(true);
-      } else {
-        console.error('Resend connection failed:', error);
-        setErrorMsg('Failed to connect to the authentication server.');
-      }
+      console.error('Resend connection failed:', error);
+      setErrorMsg('Failed to connect to the authentication server.');
     }
   };
 
@@ -188,17 +143,10 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(otpCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const handleBackToLogin = () => {
     setIsOtpSent(false);
     setEnteredOtp('');
     setErrorMsg('');
-    setShowToast(false);
   };
 
   return (
@@ -207,26 +155,7 @@ export const Login: React.FC = () => {
       {/* Subtle background pattern */}
       <div style={styles.bgPattern} />
 
-      {/* Simulated OTP Notification Toast */}
-      {showToast && (
-        <div style={styles.toast} onClick={handleCopyCode} title="Click to copy code">
-          <div style={styles.toastHeader}>
-            <ShieldAlert size={15} color="var(--theme-accent)" />
-            <span style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-primary)' }}>Admin System [Dev Mode]</span>
-            {copied ? (
-              <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CheckCircle size={10} /> Copied
-              </span>
-            ) : (
-              <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--text-muted)' }}>Click to Copy</span>
-            )}
-          </div>
-          <p style={{ fontSize: '0.75rem', marginTop: '6px', color: 'var(--text-secondary)' }}>
-            OTP sent to <strong>{email}</strong>:
-          </p>
-          <div style={styles.toastOtpCode}>{otpCode}</div>
-        </div>
-      )}
+      {/* Dev Mode OTP Toast removed */}
 
       <main style={styles.cardWrapper}>
         {/* Brand Header */}
@@ -580,6 +509,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 'var(--radius-sm)',
     border: '1px dashed var(--border-color)'
   },
+
   resendBtn: {
     background: 'transparent',
     border: 'none',

@@ -299,3 +299,7 @@ resource "aws_lambda_function" "otp_handler" {
     Environment = var.environment
   }
 }
+
+resource "aws_ses_email_identity" "ses_sender" {
+  email = var.ses_sender
+}
