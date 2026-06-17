@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '../config';
 
 export type UserRole = 'Employee' | 'Manager' | 'HR';
 
@@ -110,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [tokens, logout]);
 
   // ── Passwordless Login using AWS API Gateway verify-otp ──────────────────────────
-  const VERIFY_OTP_URL = '/api/verify-otp';
+  const VERIFY_OTP_URL = import.meta.env.DEV ? '/api/verify-otp' : `${API_BASE_URL}/prod/verify-otp`;
 
   const login = useCallback(async (name: string, email: string, role: UserRole, otp: string): Promise<{ success: boolean; message: string }> => {
     setIsLoading(true);

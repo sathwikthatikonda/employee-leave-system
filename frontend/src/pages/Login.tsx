@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../context/AuthContext';
 import { Calendar, User, ShieldAlert, Award, Lock, Mail, Key, ArrowLeft } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
-const SEND_OTP_URL = '/api/send-otp';
+const SEND_OTP_URL = import.meta.env.DEV ? '/api/send-otp' : `${API_BASE_URL}/prod/send-otp`;
 
 
 export const Login: React.FC = () => {
