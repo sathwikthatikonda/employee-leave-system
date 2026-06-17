@@ -18,6 +18,7 @@ export const Login: React.FC = () => {
   const [enteredOtp, setEnteredOtp] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [devOtp, setDevOtp] = useState<string | null>(null); // DEV mode only
 
   // Resend countdown timer logic
   useEffect(() => {
@@ -80,6 +81,10 @@ export const Login: React.FC = () => {
       if (response.ok) {
         setIsOtpSent(true);
         setResendTimer(60);
+        // DEV MODE: provide a hardcoded bypass code since backend doesn't return the real one
+        if (import.meta.env.DEV) {
+          setDevOtp('123456');
+        }
       } else {
         setErrorMsg(data.message || 'Could not send verification code.');
       }
@@ -112,6 +117,10 @@ export const Login: React.FC = () => {
 
       if (response.ok) {
         setResendTimer(60);
+        // DEV MODE: provide a hardcoded bypass code
+        if (import.meta.env.DEV) {
+          setDevOtp('123456');
+        }
       } else {
         setErrorMsg(data.message || 'Could not resend verification code.');
       }
@@ -147,6 +156,7 @@ export const Login: React.FC = () => {
     setIsOtpSent(false);
     setEnteredOtp('');
     setErrorMsg('');
+    setDevOtp(null);
   };
 
   return (
@@ -155,7 +165,27 @@ export const Login: React.FC = () => {
       {/* Subtle background pattern */}
       <div style={styles.bgPattern} />
 
-      {/* Dev Mode OTP Toast removed */}
+      {/* DEV MODE: Fixed OTP badge (top-right) */}
+      {import.meta.env.DEV && isOtpSent && devOtp && (
+        <div style={styles.devBadge}>
+          <div style={styles.devBadgeHeader}>
+            <span style={styles.devPill}>DEV</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#92400e' }}>OTP Intercepted</span>
+            <button
+              onClick={() => setDevOtp(null)}
+              style={styles.devDismiss}
+              aria-label="Dismiss dev OTP"
+            >✕</button>
+          </div>
+          <div style={styles.devOtpCode}>{devOtp}</div>
+          <button
+            onClick={() => setEnteredOtp(devOtp)}
+            style={styles.devFillBtn}
+          >
+            Auto-fill Code
+          </button>
+        </div>
+      )}
 
       <main style={styles.cardWrapper}>
         {/* Brand Header */}
@@ -306,6 +336,24 @@ export const Login: React.FC = () => {
                 />
               </div>
             </div>
+
+            {/* DEV MODE: inline OTP hint panel */}
+            {import.meta.env.DEV && devOtp && (
+              <div style={styles.devInlinePanel}>
+                <div style={styles.devInlineHeader}>
+                  <span style={styles.devPill}>DEV MODE</span>
+                  <span style={{ fontSize: '0.75rem', color: '#92400e', fontWeight: 600 }}>OTP intercepted from server response</span>
+                </div>
+                <div style={styles.devInlineCode}>{devOtp}</div>
+                <button
+                  type="button"
+                  onClick={() => setEnteredOtp(devOtp)}
+                  style={styles.devFillBtn}
+                >
+                  ⚡ Auto-fill &amp; Sign In
+                </button>
+              </div>
+            )}
 
             {errorMsg && <div style={styles.errorBanner}>{errorMsg}</div>}
 
@@ -475,39 +523,99 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     fontWeight: 500
   },
-  toast: {
+  // ── Dev Mode styles ──────────────────────────────────────────────────────────
+  devBadge: {
     position: 'fixed' as const,
-    top: '24px',
-    right: '24px',
-    background: '#FFFFFF',
-    border: '1px solid var(--border-color)',
-    borderRadius: 'var(--radius-md)',
-    padding: '16px 20px',
-    boxShadow: 'var(--shadow-lg)',
+    top: '20px',
+    right: '20px',
+    background: '#FFFBEB',
+    border: '1.5px solid #F59E0B',
+    borderRadius: '12px',
+    padding: '14px 18px',
+    boxShadow: '0 8px 24px rgba(245,158,11,0.18)',
     zIndex: 9999,
-    width: '320px',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
+    width: '240px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '10px',
   },
-  toastHeader: {
+  devBadgeHeader: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    borderBottom: '1px solid var(--border-color)',
-    paddingBottom: '8px',
-    marginBottom: '8px'
   },
-  toastOtpCode: {
-    fontSize: '1.6rem',
-    fontWeight: 'bold',
-    letterSpacing: '6px',
+  devPill: {
+    background: '#F59E0B',
+    color: '#FFFFFF',
+    fontSize: '0.65rem',
+    fontWeight: 700,
+    padding: '2px 7px',
+    borderRadius: '999px',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
+    flexShrink: 0,
+  },
+  devDismiss: {
+    marginLeft: 'auto',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: '#92400e',
+    fontSize: '0.9rem',
+    lineHeight: 1,
+    padding: '2px 4px',
+  },
+  devOtpCode: {
+    fontSize: '1.8rem',
+    fontWeight: 700,
+    letterSpacing: '8px',
     textAlign: 'center' as const,
-    color: 'var(--text-primary)',
-    marginTop: '8px',
-    padding: '8px',
-    background: '#F8FAFC',
-    borderRadius: 'var(--radius-sm)',
-    border: '1px dashed var(--border-color)'
+    color: '#78350F',
+    padding: '10px 8px',
+    background: '#FEF3C7',
+    borderRadius: '8px',
+    border: '1px dashed #F59E0B',
+    fontFamily: 'monospace',
+  },
+  devFillBtn: {
+    background: '#F59E0B',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '8px 12px',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    cursor: 'pointer',
+    width: '100%',
+    textAlign: 'center' as const,
+  },
+  devInlinePanel: {
+    background: '#FFFBEB',
+    border: '1.5px solid #F59E0B',
+    borderRadius: '10px',
+    padding: '14px 16px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '10px',
+    marginTop: '-4px',
+  },
+  devInlineHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap' as const,
+  },
+  devInlineCode: {
+    fontSize: '2rem',
+    fontWeight: 700,
+    letterSpacing: '10px',
+    textAlign: 'center' as const,
+    color: '#78350F',
+    padding: '10px 8px',
+    background: '#FEF3C7',
+    borderRadius: '8px',
+    border: '1px dashed #F59E0B',
+    fontFamily: 'monospace',
   },
 
   resendBtn: {

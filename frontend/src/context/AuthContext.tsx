@@ -115,6 +115,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = useCallback(async (name: string, email: string, role: UserRole, otp: string): Promise<{ success: boolean; message: string }> => {
     setIsLoading(true);
     try {
+      // DEV MODE BYPASS
+      if (import.meta.env.DEV && otp === '123456') {
+        const expiresInSec = 3600; // 1 Hour
+        const expiresAt = Date.now() + expiresInSec * 1000;
+        const tokenSet: TokenSet = {
+          idToken: `dev-session-${Date.now()}`,
+          accessToken: `dev-session-${Date.now()}`,
+          refreshToken: 'refresh-token-placeholder',
+          expiresAt,
+        };
+        const userObj: User = {
+          id: `dev-${Date.now()}`,
+          name: name,
+          email: email,
+          role: role,
+          department: role === 'HR' ? 'People Operations' : role === 'Manager' ? 'Management' : 'Engineering',
+          title: role === 'Employee' ? 'Software Engineer' : role === 'Manager' ? 'Team Lead' : 'HR Administrator',
+        };
+        setUser(userObj);
+        setTokens(tokenSet);
+        localStorage.setItem('elms_session', JSON.stringify({ user: userObj, tokens: tokenSet }));
+        setIsLoading(false);
+        return { success: true, message: 'Authenticated successfully (DEV MODE).' };
+      }
+
       const response = await fetch(VERIFY_OTP_URL, {
         method: 'POST',
         headers: {
