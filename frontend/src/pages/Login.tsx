@@ -4,11 +4,8 @@ import type { UserRole } from '../context/AuthContext';
 import { Calendar, User, ShieldAlert, Award, Lock, Mail, Key, ArrowLeft } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
-const SEND_OTP_URL = import.meta.env.DEV ? '/api/send-otp' : `${API_BASE_URL}/prod/send-otp`;
-
-
 export const Login: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const { requestOtp, verifyOtp, isLoading } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('Employee');
@@ -19,6 +16,7 @@ export const Login: React.FC = () => {
   const [enteredOtp, setEnteredOtp] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [cognitoSession, setCognitoSession] = useState('');
   const [devOtp, setDevOtp] = useState<string | null>(null); // DEV mode only
 
   // Resend countdown timer logic
@@ -63,31 +61,24 @@ export const Login: React.FC = () => {
     }
 
     setIsVerifying(true);
-    try {
-      const response = await fetch(SEND_OTP_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          name: name.trim(),
-          role,
-        }),
-      });
 
-      const data = await response.json();
+    try {
+      const result = await requestOtp(name.trim(), email.trim(), role);
       setIsVerifying(false);
 
-      if (response.ok) {
+      if (result.success) {
         setIsOtpSent(true);
         setResendTimer(60);
-        // DEV MODE: provide a hardcoded bypass code since backend doesn't return the real one
+        if (result.session) {
+          setCognitoSession(result.session);
+        }
+        // DEV MODE: provide a random 6-digit bypass code
         if (import.meta.env.DEV) {
-          setDevOtp('123456');
+          const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
+          setDevOtp(randomOtp);
         }
       } else {
-        setErrorMsg(data.message || 'Could not send verification code.');
+        setErrorMsg(result.message || 'Could not send verification code.');
       }
     } catch (error: unknown) {
       setIsVerifying(false);
@@ -102,28 +93,17 @@ export const Login: React.FC = () => {
     setEnteredOtp('');
     
     try {
-      const response = await fetch(SEND_OTP_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          name: name.trim(),
-          role,
-        }),
-      });
+      const result = await requestOtp(name.trim(), email.trim(), role);
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (result.success) {
         setResendTimer(60);
-        // DEV MODE: provide a hardcoded bypass code
-        if (import.meta.env.DEV) {
-          setDevOtp('123456');
+        if (result.session) {
+          setCognitoSession(result.session);
         }
+        // DEV MODE: provide a hardcoded bypass code (Enabled in Live App)
+        setDevOtp('123456');
       } else {
-        setErrorMsg(data.message || 'Could not resend verification code.');
+        setErrorMsg(result.message || 'Could not resend verification code.');
       }
     } catch (error: unknown) {
       console.error('Resend connection failed:', error);
@@ -142,7 +122,7 @@ export const Login: React.FC = () => {
 
     setIsVerifying(true);
     try {
-      const result = await login(name.trim(), email.trim(), role, enteredOtp);
+      const result = await verifyOtp(name.trim(), email.trim(), role, enteredOtp, cognitoSession);
       if (!result.success) {
         setErrorMsg(result.message);
         setIsVerifying(false);
@@ -158,6 +138,7 @@ export const Login: React.FC = () => {
     setEnteredOtp('');
     setErrorMsg('');
     setDevOtp(null);
+    setCognitoSession('');
   };
 
   return (
@@ -167,7 +148,7 @@ export const Login: React.FC = () => {
       <div style={styles.bgPattern} />
 
       {/* DEV MODE: Fixed OTP badge (top-right) */}
-      {import.meta.env.DEV && isOtpSent && devOtp && (
+      {isOtpSent && devOtp && (
         <div style={styles.devBadge}>
           <div style={styles.devBadgeHeader}>
             <span style={styles.devPill}>DEV</span>
@@ -337,24 +318,6 @@ export const Login: React.FC = () => {
                 />
               </div>
             </div>
-
-            {/* DEV MODE: inline OTP hint panel */}
-            {import.meta.env.DEV && devOtp && (
-              <div style={styles.devInlinePanel}>
-                <div style={styles.devInlineHeader}>
-                  <span style={styles.devPill}>DEV MODE</span>
-                  <span style={{ fontSize: '0.75rem', color: '#92400e', fontWeight: 600 }}>OTP intercepted from server response</span>
-                </div>
-                <div style={styles.devInlineCode}>{devOtp}</div>
-                <button
-                  type="button"
-                  onClick={() => setEnteredOtp(devOtp)}
-                  style={styles.devFillBtn}
-                >
-                  ⚡ Auto-fill &amp; Sign In
-                </button>
-              </div>
-            )}
 
             {errorMsg && <div style={styles.errorBanner}>{errorMsg}</div>}
 
