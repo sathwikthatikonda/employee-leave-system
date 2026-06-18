@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [tokens, logout]);
 
   // ── Request OTP via Cognito InitiateAuth ──────────────────────────
-  const requestOtp = useCallback(async (name: string, email: string, role: UserRole) => {
+  const requestOtp = useCallback(async (_name: string, email: string, _role: UserRole) => {
     setIsLoading(true);
     
     // DEV MODE BYPASS

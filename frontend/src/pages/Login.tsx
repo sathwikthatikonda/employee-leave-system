@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../context/AuthContext';
 import { Calendar, User, ShieldAlert, Award, Lock, Mail, Key, ArrowLeft } from 'lucide-react';
-import { API_BASE_URL } from '../config';
+
 
 export const Login: React.FC = () => {
   const { requestOtp, verifyOtp, isLoading } = useAuth();
