@@ -1,4 +1,4 @@
-name: AWS CDK CI/CD Pipeline
+name: ELMS Terraform CI/CD Pipeline
 
 on:
   push:
@@ -33,6 +33,11 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
+    # Ensure the Terraform state S3 bucket exists before init
+    - name: Create Terraform State Bucket (if not exists)
+      run: |
+        aws s3api create-bucket --bucket elms-terraform-state-sathwik-12345 --region us-east-1 || true
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
 
@@ -43,7 +48,7 @@ jobs:
         terraform init
         terraform apply -auto-approve
 
-    # Retrieve output values (e.g. S3 Bucket Name for sync) from the deployed CloudFormation stack
+    # Sync built frontend to S3 and invalidate CloudFront cache
     - name: Sync Frontend to AWS S3 & Invalidate CDN
       run: |
         # Synchronize React output folder with the S3 Hosting bucket
