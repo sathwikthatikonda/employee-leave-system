@@ -41,6 +41,7 @@ jobs:
     - name: Deploy AWS CDK Stack
       run: |
         cd infrastructure
+        cdk bootstrap
         cdk deploy --require-approval never
 
     # Retrieve output values (e.g. S3 Bucket Name for sync) from the deployed CloudFormation stack
