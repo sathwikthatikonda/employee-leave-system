@@ -36,7 +36,7 @@ jobs:
     # Ensure the Terraform state S3 bucket exists before init
     - name: Create Terraform State Bucket (if not exists)
       run: |
-        aws s3api create-bucket --bucket elms-terraform-state-sathwik-12345 --region us-east-1 || true
+        aws s3api create-bucket --bucket employee-leave-1 --region us-east-1 || true
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
