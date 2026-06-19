@@ -1,4 +1,4 @@
-name: AWS CDK CI/CD Pipeline
+name: ELMS Frontend Deploy Pipeline
 
 on:
   push:
@@ -21,10 +21,8 @@ jobs:
     - name: Install Monorepo Dependencies
       run: npm install
 
-    - name: Lint and Compile TypeScript
-      run: |
-        npm run frontend:build
-        npm run infra:build
+    - name: Build Frontend
+      run: npm run frontend:build
 
     # Setup AWS Credentials securely using GitHub Secret variables
     - name: Configure AWS Credentials
@@ -34,21 +32,9 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Install CDK CLI Globally
-      run: npm install -g aws-cdk
-
-    # Deploy AWS CDK Infrastructure
-    - name: Deploy AWS CDK Stack
-      run: |
-        cd infrastructure
-        cdk bootstrap
-        cdk deploy --require-approval never
-
-    # Retrieve output values (e.g. S3 Bucket Name for sync) from the deployed CloudFormation stack
+    # Sync built frontend to S3 and invalidate CloudFront cache
     - name: Sync Frontend to AWS S3 & Invalidate CDN
       run: |
-        # Synchronize React output folder with the S3 Hosting bucket
         aws s3 sync frontend/dist/ s3://elms-frontend-hosting-${{ secrets.AWS_ACCOUNT_ID }}/ --delete
-        
-        # Invalidate CloudFront distribution cache for instant updates
         aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+
