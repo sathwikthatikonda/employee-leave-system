@@ -1,8 +1,8 @@
 terraform {
   backend "s3" {
-    bucket  = "employee-leave-1"
+    bucket  = "elms-terraform-state-sathwik-12345"
     key     = "state/terraform.tfstate"
-    region  = "ap-south-1"
+    region  = "us-east-1"
     encrypt = true
   }
 }

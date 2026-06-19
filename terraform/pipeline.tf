@@ -196,11 +196,11 @@ phases:
   build:
     commands:
       - echo Building frontend application...
-      - npm run frontend:build
+      - npm run build
 artifacts:
   files:
     - '**/*'
-  base-directory: frontend/dist
+  base-directory: dist
 EOF
   }
 }

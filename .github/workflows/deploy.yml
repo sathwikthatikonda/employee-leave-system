@@ -1,4 +1,4 @@
-name: ELMS Terraform CI/CD Pipeline
+name: AWS CDK CI/CD Pipeline
 
 on:
   push:
@@ -21,9 +21,10 @@ jobs:
     - name: Install Monorepo Dependencies
       run: npm install
 
-    - name: Build TypeScript Frontend
+    - name: Lint and Compile TypeScript
       run: |
         npm run frontend:build
+        npm run infra:build
 
     # Setup AWS Credentials securely using GitHub Secret variables
     - name: Configure AWS Credentials
@@ -33,22 +34,16 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    # Ensure the Terraform state S3 bucket exists before init
-    - name: Create Terraform State Bucket (if not exists)
+    - name: Install CDK CLI Globally
+      run: npm install -g aws-cdk
+
+    # Deploy AWS CDK Infrastructure
+    - name: Deploy AWS CDK Stack
       run: |
-        aws s3api create-bucket --bucket employee-leave-1 --region us-east-1 || true
+        cd infrastructure
+        cdk deploy --require-approval never
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-
-    # Deploy AWS Terraform Infrastructure
-    - name: Deploy Terraform Stack
-      run: |
-        cd terraform
-        terraform init
-        terraform apply -auto-approve
-
-    # Sync built frontend to S3 and invalidate CloudFront cache
+    # Retrieve output values (e.g. S3 Bucket Name for sync) from the deployed CloudFormation stack
     - name: Sync Frontend to AWS S3 & Invalidate CDN
       run: |
         # Synchronize React output folder with the S3 Hosting bucket
