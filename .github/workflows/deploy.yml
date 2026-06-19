@@ -21,10 +21,9 @@ jobs:
     - name: Install Monorepo Dependencies
       run: npm install
 
-    - name: Lint and Compile TypeScript
+    - name: Build TypeScript Frontend
       run: |
         npm run frontend:build
-        npm run infra:build
 
     # Setup AWS Credentials securely using GitHub Secret variables
     - name: Configure AWS Credentials
@@ -34,14 +33,15 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Install CDK CLI Globally
-      run: npm install -g aws-cdk
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
 
-    # Deploy AWS CDK Infrastructure
-    - name: Deploy AWS CDK Stack
+    # Deploy AWS Terraform Infrastructure
+    - name: Deploy Terraform Stack
       run: |
-        cd infrastructure
-        cdk deploy --require-approval never
+        cd terraform
+        terraform init
+        terraform apply -auto-approve
 
     # Retrieve output values (e.g. S3 Bucket Name for sync) from the deployed CloudFormation stack
     - name: Sync Frontend to AWS S3 & Invalidate CDN
