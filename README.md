@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Employee Leave Management System is a serverless web application built on AWS that allows employees to submit leave requests through a React-based frontend. Leave requests are processed by AWS Lambda functions, stored in DynamoDB, and integrated with SNS notifications.
+The Employee Leave Management System is a serverless web application built on AWS that allows employees to submit leave requests through a React-based frontend. Leave requests are processed by AWS Lambda functions, stored in DynamoDB.
 
 The project demonstrates modern cloud-native application development using Infrastructure as Code (Terraform), serverless architecture, and CI/CD automation using AWS DevOps services.
 
@@ -42,7 +42,6 @@ SNS Notifications
 * Serverless backend using AWS Lambda
 * REST API using Amazon API Gateway
 * Leave request storage in DynamoDB
-* Notification integration with Amazon SNS
 * React-based responsive frontend
 * Infrastructure managed using Terraform
 * Automated CI/CD pipeline using AWS CodePipeline and CodeBuild
@@ -70,7 +69,6 @@ SNS Notifications
 * Amazon CloudFront
 * Amazon API Gateway
 * Amazon DynamoDB
-* Amazon SNS
 * AWS IAM
 
 ### Infrastructure as Code
@@ -95,7 +93,6 @@ SNS Notifications
 | API Gateway  | Exposes REST API endpoints      |
 | Lambda       | Executes backend business logic |
 | DynamoDB     | Stores leave requests           |
-| SNS          | Notification service            |
 | IAM          | Permissions and security        |
 | CodeBuild    | Builds application code         |
 | CodePipeline | Automates deployment            |
