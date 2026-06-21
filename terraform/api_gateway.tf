@@ -51,20 +51,6 @@ resource "aws_api_gateway_resource" "users_balances" {
   path_part   = "balances"
 }
 
-# /send-otp
-resource "aws_api_gateway_resource" "send_otp" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  path_part   = "send-otp"
-}
-
-# /verify-otp
-resource "aws_api_gateway_resource" "verify_otp" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
-  path_part   = "verify-otp"
-}
-
 
 # --- METHODS & INTEGRATIONS ---
 
@@ -154,40 +140,6 @@ resource "aws_api_gateway_integration" "users_balances_put" {
   uri                     = aws_lambda_function.users_handler.invoke_arn
 }
 
-# 6. /send-otp POST (otpHandler)
-resource "aws_api_gateway_method" "send_otp_post" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.send_otp.id
-  http_method   = "POST"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "send_otp_post" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.send_otp.id
-  http_method             = aws_api_gateway_method.send_otp_post.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.otp_handler.invoke_arn
-}
-
-# 7. /verify-otp POST (otpHandler)
-resource "aws_api_gateway_method" "verify_otp_post" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
-  resource_id   = aws_api_gateway_resource.verify_otp.id
-  http_method   = "POST"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "verify_otp_post" {
-  rest_api_id             = aws_api_gateway_rest_api.api.id
-  resource_id             = aws_api_gateway_resource.verify_otp.id
-  http_method             = aws_api_gateway_method.verify_otp_post.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.otp_handler.invoke_arn
-}
-
 
 # --- CORS CONFIGURATION (OPTIONS Methods) ---
 
@@ -215,18 +167,6 @@ module "cors_users_balances" {
   rest_api_id = aws_api_gateway_rest_api.api.id
 }
 
-module "cors_send_otp" {
-  source      = "./cors"
-  resource_id = aws_api_gateway_resource.send_otp.id
-  rest_api_id = aws_api_gateway_rest_api.api.id
-}
-
-module "cors_verify_otp" {
-  source      = "./cors"
-  resource_id = aws_api_gateway_resource.verify_otp.id
-  rest_api_id = aws_api_gateway_rest_api.api.id
-}
-
 
 
 # --- LAMBDA PERMISSIONS FOR API GATEWAY ---
@@ -247,14 +187,6 @@ resource "aws_lambda_permission" "apigw_users" {
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*"
 }
 
-resource "aws_lambda_permission" "apigw_otp" {
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.otp_handler.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*"
-}
-
 
 # --- DEPLOYMENT & STAGE ---
 
@@ -264,9 +196,7 @@ resource "aws_api_gateway_deployment" "deployment" {
     aws_api_gateway_integration.leaves_get,
     aws_api_gateway_integration.leaves_status_put,
     aws_api_gateway_integration.users_get,
-    aws_api_gateway_integration.users_balances_put,
-    aws_api_gateway_integration.send_otp_post,
-    aws_api_gateway_integration.verify_otp_post
+    aws_api_gateway_integration.users_balances_put
   ]
 
   rest_api_id = aws_api_gateway_rest_api.api.id

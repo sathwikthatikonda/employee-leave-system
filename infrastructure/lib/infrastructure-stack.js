@@ -95,32 +95,6 @@ class LeaveManagementStack extends cdk.Stack {
             },
         });
         employeesTable.grantReadWriteData(usersHandler);
-        // OTP Table (Holds temporary OTP codes with TTL)
-        const otpTable = new dynamodb.Table(this, 'OtpTable', {
-            partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
-            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            timeToLiveAttribute: 'ttl',
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
-            tableName: 'Otps',
-        });
-        // OTP Handler (POST /send-otp, POST /verify-otp)
-        const otpHandler = new lambda.Function(this, 'OtpHandlerLambda', {
-            runtime: lambda.Runtime.NODEJS_18_X,
-            handler: 'index.handler',
-            code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/otp-handler')),
-            environment: {
-                OTP_TABLE: otpTable.tableName,
-                USERS_TABLE: employeesTable.tableName,
-                JWT_SECRET: 'super-secret-chronos-key-12345',
-                SES_SENDER: 'noreply@yourdomain.com',
-            },
-        });
-        otpTable.grantReadWriteData(otpHandler);
-        employeesTable.grantReadWriteData(otpHandler);
-        otpHandler.addToRolePolicy(new iam.PolicyStatement({
-            actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-            resources: ['*'],
-        }));
         // =========================================================================
         // 4. API GATEWAY INTEGRATION
         // =========================================================================
@@ -142,10 +116,6 @@ class LeaveManagementStack extends cdk.Stack {
         usersResource.addMethod('GET', new apigateway.LambdaIntegration(usersHandler));
         const singleUserBalances = usersResource.addResource('{id}').addResource('balances');
         singleUserBalances.addMethod('PUT', new apigateway.LambdaIntegration(usersHandler));
-        const sendOtpResource = api.root.addResource('send-otp');
-        sendOtpResource.addMethod('POST', new apigateway.LambdaIntegration(otpHandler));
-        const verifyOtpResource = api.root.addResource('verify-otp');
-        verifyOtpResource.addMethod('POST', new apigateway.LambdaIntegration(otpHandler));
         // =========================================================================
         // 5. S3 & CLOUDFRONT (FRONTEND HOSTING)
         // =========================================================================

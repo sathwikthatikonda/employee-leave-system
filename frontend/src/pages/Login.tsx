@@ -1,32 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../context/AuthContext';
-import { Calendar, User, ShieldAlert, Award, Lock, Mail, Key, ArrowLeft } from 'lucide-react';
+import { Calendar, User, ShieldAlert, Award, Lock } from 'lucide-react';
 
 
 export const Login: React.FC = () => {
-  const { requestOtp, verifyOtp, isLoading } = useAuth();
+  const { signIn, isLoading } = useAuth();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('Employee');
   const [errorMsg, setErrorMsg] = useState('');
-  
-  // OTP Flow States
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [enteredOtp, setEnteredOtp] = useState('');
-  const [resendTimer, setResendTimer] = useState(0);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [cognitoSession, setCognitoSession] = useState('');
-  const [devOtp, setDevOtp] = useState<string | null>(null); // DEV mode only
-
-  // Resend countdown timer logic
-  useEffect(() => {
-    if (resendTimer <= 0) return;
-    const interval = setInterval(() => {
-      setResendTimer((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [resendTimer]);
 
   const handleRoleSelect = (selectedRole: UserRole) => {
     setRole(selectedRole);
@@ -43,7 +25,7 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleRequestOtp = async (e: React.FormEvent) => {
+  const handleSignInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -51,94 +33,16 @@ export const Login: React.FC = () => {
       setErrorMsg('Please enter your full name.');
       return;
     }
-    if (!email.trim()) {
-      setErrorMsg('Please enter your email address.');
-      return;
-    }
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setErrorMsg('Please enter a valid email address.');
-      return;
-    }
-
-    setIsVerifying(true);
 
     try {
-      const result = await requestOtp(name.trim(), email.trim(), role);
-      setIsVerifying(false);
-
-      if (result.success) {
-        setIsOtpSent(true);
-        setResendTimer(60);
-        if (result.session) {
-          setCognitoSession(result.session);
-        }
-        // DEV MODE: provide a random 6-digit bypass code
-        if (import.meta.env.DEV) {
-          const randomOtp = Math.floor(100000 + Math.random() * 900000).toString();
-          setDevOtp(randomOtp);
-        }
-      } else {
-        setErrorMsg(result.message || 'Could not send verification code.');
-      }
-    } catch (error: unknown) {
-      setIsVerifying(false);
-      console.error('Connection failed:', error);
-      setErrorMsg('Failed to connect to the authentication server.');
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (resendTimer > 0) return;
-    setErrorMsg('');
-    setEnteredOtp('');
-    
-    try {
-      const result = await requestOtp(name.trim(), email.trim(), role);
-
-      if (result.success) {
-        setResendTimer(60);
-        if (result.session) {
-          setCognitoSession(result.session);
-        }
-        // DEV MODE: provide a hardcoded bypass code (Enabled in Live App)
-        setDevOtp('123456');
-      } else {
-        setErrorMsg(result.message || 'Could not resend verification code.');
-      }
-    } catch (error: unknown) {
-      console.error('Resend connection failed:', error);
-      setErrorMsg('Failed to connect to the authentication server.');
-    }
-  };
-
-  const handleVerifyAndSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg('');
-
-    if (enteredOtp.length !== 6) {
-      setErrorMsg('Please enter the 6-digit OTP code.');
-      return;
-    }
-
-    setIsVerifying(true);
-    try {
-      const result = await verifyOtp(name.trim(), email.trim(), role, enteredOtp, cognitoSession);
+      const result = await signIn(name.trim(), role);
       if (!result.success) {
-        setErrorMsg(result.message);
-        setIsVerifying(false);
+        setErrorMsg(result.message || 'Authentication failed.');
       }
-    } catch {
-      setErrorMsg('Network error. Unable to reach authentication service.');
-      setIsVerifying(false);
+    } catch (error: unknown) {
+      console.error('Sign in failed:', error);
+      setErrorMsg('Failed to connect to the authentication server.');
     }
-  };
-
-  const handleBackToLogin = () => {
-    setIsOtpSent(false);
-    setEnteredOtp('');
-    setErrorMsg('');
-    setDevOtp(null);
-    setCognitoSession('');
   };
 
   return (
@@ -146,28 +50,6 @@ export const Login: React.FC = () => {
       
       {/* Subtle background pattern */}
       <div style={styles.bgPattern} />
-
-      {/* DEV MODE: Fixed OTP badge (top-right) */}
-      {isOtpSent && devOtp && (
-        <div style={styles.devBadge}>
-          <div style={styles.devBadgeHeader}>
-            <span style={styles.devPill}>DEV</span>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#92400e' }}>OTP Intercepted</span>
-            <button
-              onClick={() => setDevOtp(null)}
-              style={styles.devDismiss}
-              aria-label="Dismiss dev OTP"
-            >✕</button>
-          </div>
-          <div style={styles.devOtpCode}>{devOtp}</div>
-          <button
-            onClick={() => setEnteredOtp(devOtp)}
-            style={styles.devFillBtn}
-          >
-            Auto-fill Code
-          </button>
-        </div>
-      )}
 
       <main style={styles.cardWrapper}>
         {/* Brand Header */}
@@ -185,169 +67,82 @@ export const Login: React.FC = () => {
           <span>SSO Verification • TLS 1.3 Secure Connection</span>
         </div>
 
-        {/* OTP Input Form vs. Initial Credentials Form */}
-        {!isOtpSent ? (
-          <form onSubmit={handleRequestOtp} style={styles.form}>
-            <div style={styles.roleSelectionHeader}>Select Role Access</div>
+        <form onSubmit={handleSignInSubmit} style={styles.form}>
+          <div style={styles.roleSelectionHeader}>Select Role Access</div>
 
-            {/* 3 Role Selection Cards */}
-            <div style={styles.roleGrid}>
-              <div
-                onClick={() => handleRoleSelect('Employee')}
-                style={{
-                  ...styles.roleCard,
-                  borderColor: role === 'Employee' ? '#3B82F6' : 'var(--border-color)',
-                  background: role === 'Employee' ? '#EFF6FF' : '#FFFFFF',
-                  boxShadow: role === 'Employee' ? '0 0 0 1px #3B82F6' : 'var(--shadow-sm)'
-                }}
-              >
-                <User size={18} color={role === 'Employee' ? '#3B82F6' : 'var(--text-muted)'} />
-                <div style={{ ...styles.cardLabel, color: role === 'Employee' ? '#1D4ED8' : 'var(--text-secondary)' }}>Employee</div>
-              </div>
-
-              <div
-                onClick={() => handleRoleSelect('Manager')}
-                style={{
-                  ...styles.roleCard,
-                  borderColor: role === 'Manager' ? '#8B5CF6' : 'var(--border-color)',
-                  background: role === 'Manager' ? '#F5F3FF' : '#FFFFFF',
-                  boxShadow: role === 'Manager' ? '0 0 0 1px #8B5CF6' : 'var(--shadow-sm)'
-                }}
-              >
-                <Award size={18} color={role === 'Manager' ? '#8B5CF6' : 'var(--text-muted)'} />
-                <div style={{ ...styles.cardLabel, color: role === 'Manager' ? '#6D28D9' : 'var(--text-secondary)' }}>Manager</div>
-              </div>
-
-              <div
-                onClick={() => handleRoleSelect('HR')}
-                style={{
-                  ...styles.roleCard,
-                  borderColor: role === 'HR' ? '#10B981' : 'var(--border-color)',
-                  background: role === 'HR' ? '#ECFDF5' : '#FFFFFF',
-                  boxShadow: role === 'HR' ? '0 0 0 1px #10B981' : 'var(--shadow-sm)'
-                }}
-              >
-                <ShieldAlert size={18} color={role === 'HR' ? '#10B981' : 'var(--text-muted)'} />
-                <div style={{ ...styles.cardLabel, color: role === 'HR' ? '#047857' : 'var(--text-secondary)' }}>HR Admin</div>
-              </div>
-            </div>
-
-            {/* Name input */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Full Name</label>
-              <div style={styles.inputWrapper}>
-                <User size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                  type="text"
-                  id="login-name"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input-glass"
-                  style={{ paddingLeft: '40px' }}
-                  autoComplete="name"
-                />
-              </div>
-            </div>
-
-            {/* Email input */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Corporate Email</label>
-              <div style={styles.inputWrapper}>
-                <Mail size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                  type="email"
-                  id="login-email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-glass"
-                  style={{ paddingLeft: '40px' }}
-                  autoComplete="email"
-                />
-              </div>
-            </div>
-
-            {errorMsg && <div style={styles.errorBanner}>{errorMsg}</div>}
-
-            {/* Send OTP Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="btn-primary"
-              style={{ width: '100%', marginTop: '12px' }}
+          {/* 3 Role Selection Cards */}
+          <div style={styles.roleGrid}>
+            <div
+              onClick={() => handleRoleSelect('Employee')}
+              style={{
+                ...styles.roleCard,
+                borderColor: role === 'Employee' ? '#3B82F6' : 'var(--border-color)',
+                background: role === 'Employee' ? '#EFF6FF' : '#FFFFFF',
+                boxShadow: role === 'Employee' ? '0 0 0 1px #3B82F6' : 'var(--shadow-sm)'
+              }}
             >
-              Continue with Email
-            </button>
-            
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyAndSubmit} style={styles.form}>
-            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Check your email</div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                We sent a 6-digit verification code to <br/>
-                <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>
-              </p>
+              <User size={18} color={role === 'Employee' ? '#3B82F6' : 'var(--text-muted)'} />
+              <div style={{ ...styles.cardLabel, color: role === 'Employee' ? '#1D4ED8' : 'var(--text-secondary)' }}>Employee</div>
             </div>
 
-            {/* OTP code input */}
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Verification Code</label>
-              <div style={styles.inputWrapper}>
-                <Key size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                  type="text"
-                  maxLength={6}
-                  pattern="[0-9]*"
-                  placeholder="000000"
-                  value={enteredOtp}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, ''); // only allow numbers
-                    setEnteredOtp(val);
-                  }}
-                  className="input-glass"
-                  style={{ 
-                    paddingLeft: '40px', 
-                    letterSpacing: enteredOtp ? '8px' : 'normal', 
-                    fontWeight: 'bold',
-                    fontSize: '1.2rem',
-                    textAlign: enteredOtp ? 'center' : 'left'
-                  }}
-                  autoComplete="one-time-code"
-                />
-              </div>
-            </div>
-
-            {errorMsg && <div style={styles.errorBanner}>{errorMsg}</div>}
-
-            {/* Verify Button */}
-            <button
-              type="submit"
-              disabled={isVerifying}
-              className="btn-primary"
-              style={{ width: '100%', marginTop: '8px' }}
+            <div
+              onClick={() => handleRoleSelect('Manager')}
+              style={{
+                ...styles.roleCard,
+                borderColor: role === 'Manager' ? '#8B5CF6' : 'var(--border-color)',
+                background: role === 'Manager' ? '#F5F3FF' : '#FFFFFF',
+                boxShadow: role === 'Manager' ? '0 0 0 1px #8B5CF6' : 'var(--shadow-sm)'
+              }}
             >
-              {isVerifying ? 'Verifying...' : 'Sign In'}
-            </button>
-
-            {/* Resend and timer options */}
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '4px' }}>
-              {resendTimer > 0 ? (
-                <span style={styles.resendText}>Resend code in {resendTimer}s</span>
-              ) : (
-                <button type="button" onClick={handleResendOtp} style={styles.resendBtn}>
-                  Resend OTP Code
-                </button>
-              )}
+              <Award size={18} color={role === 'Manager' ? '#8B5CF6' : 'var(--text-muted)'} />
+              <div style={{ ...styles.cardLabel, color: role === 'Manager' ? '#6D28D9' : 'var(--text-secondary)' }}>Manager</div>
             </div>
 
-            {/* Back to Edit Info */}
-            <button type="button" onClick={handleBackToLogin} style={styles.backLink}>
-              <ArrowLeft size={14} /> Back to Edit Details
-            </button>
-          </form>
-        )}
+            <div
+              onClick={() => handleRoleSelect('HR')}
+              style={{
+                ...styles.roleCard,
+                borderColor: role === 'HR' ? '#10B981' : 'var(--border-color)',
+                background: role === 'HR' ? '#ECFDF5' : '#FFFFFF',
+                boxShadow: role === 'HR' ? '0 0 0 1px #10B981' : 'var(--shadow-sm)'
+              }}
+            >
+              <ShieldAlert size={18} color={role === 'HR' ? '#10B981' : 'var(--text-muted)'} />
+              <div style={{ ...styles.cardLabel, color: role === 'HR' ? '#047857' : 'var(--text-secondary)' }}>HR Admin</div>
+            </div>
+          </div>
+
+          {/* Name input */}
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Full Name</label>
+            <div style={styles.inputWrapper}>
+              <User size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                type="text"
+                id="login-name"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input-glass"
+                style={{ paddingLeft: '40px' }}
+                autoComplete="name"
+              />
+            </div>
+          </div>
+
+          {errorMsg && <div style={styles.errorBanner}>{errorMsg}</div>}
+
+          {/* Sign In Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn-primary"
+            style={{ width: '100%', marginTop: '12px' }}
+          >
+            {isLoading ? 'Signing In...' : 'Sign In'}
+          </button>
+          
+        </form>
       </main>
     </div>
   );
